@@ -1,0 +1,327 @@
+<title>График отпусков 2027</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;600&family=Golos+Text:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: шапка с легендой → годовая лента (Гант) + полоса пересечений → 12 месячных календарей по дням → таблица периодов */
+:root {
+  --bg: #f7f7f5;
+  --surface: #fcfcfb;
+  --ink: #16181d;
+  --ink-2: #545862;
+  --ink-3: #8a8e97;
+  --line: #e3e3de;
+  --weekend: #efeeea;
+  --holiday: #c2410c;
+  --p1: #2a78d6; --p2: #eb6834; --p3: #1baf7a; --p4: #eda100;
+  --ov1: #d9d9d4; --ov2: #8f8f88; --ov3: #3d3d39;
+  --f-display: "Unbounded", "Golos Text", system-ui, sans-serif;
+  --f-body: "Golos Text", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141517; --surface: #1b1c1f; --ink: #f2f2f0; --ink-2: #b9bbc1; --ink-3: #80838b;
+    --line: #2d2f33; --weekend: #232428; --holiday: #fb8a5a;
+    --p1: #3987e5; --p2: #d95926; --p3: #199e70; --p4: #c98500;
+    --ov1: #3a3b3f; --ov2: #7c7d83; --ov3: #d6d6d2;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #141517; --surface: #1b1c1f; --ink: #f2f2f0; --ink-2: #b9bbc1; --ink-3: #80838b;
+  --line: #2d2f33; --weekend: #232428; --holiday: #fb8a5a;
+  --p1: #3987e5; --p2: #d95926; --p3: #199e70; --p4: #c98500;
+  --ov1: #3a3b3f; --ov2: #7c7d83; --ov3: #d6d6d2;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: 20px; padding-block: 32px 56px; display: grid; gap: 40px; }
+h1 { font-family: var(--f-display); font-weight: 600; font-size: clamp(24px, 4vw, 36px); line-height: 1.15; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+h2 { font-family: var(--f-display); font-weight: 500; font-size: 17px; margin: 0; }
+.sub { color: var(--ink-2); margin: 8px 0 0; max-width: 65ch; }
+header { display: grid; gap: 20px; }
+.legend { display: flex; flex-wrap: wrap; gap: 10px 24px; align-items: center; }
+.chip { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+.chip i { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
+.chip span { color: var(--ink-2); font-family: var(--f-mono); font-size: 13px; font-weight: 400; }
+.opts { display: flex; align-items: center; gap: 8px; color: var(--ink-2); font-size: 14px; }
+.opts input { width: 16px; height: 16px; accent-color: var(--ink); }
+.opts label { cursor: pointer; }
+section { display: grid; gap: 14px; min-width: 0; }
+.sec-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 16px; }
+.hint { color: var(--ink-3); font-size: 13px; }
+
+/* Годовая лента */
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.gantt-scroll { overflow-x: auto; }
+.gantt { min-width: 900px; padding: 16px 18px 14px; display: grid; grid-template-columns: 96px 1fr; row-gap: 8px; }
+.g-label { font-weight: 500; font-size: 14px; display: flex; align-items: center; }
+.g-label.small { color: var(--ink-2); font-size: 12px; font-weight: 400; line-height: 1.2; }
+.track { position: relative; height: 30px; }
+.track.months { height: 20px; }
+.m-tick { position: absolute; top: 0; bottom: 0; font-size: 11px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.06em; padding-left: 4px; border-left: 1px solid var(--line); white-space: nowrap; }
+.gridlines { position: absolute; inset: 0; pointer-events: none; }
+.gridlines b { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--line); }
+.bar { position: absolute; top: 3px; bottom: 3px; border-radius: 4px; color: #fff; font-family: var(--f-mono); font-size: 11px; font-weight: 500; display: flex; align-items: center; justify-content: center; overflow: hidden; white-space: nowrap; cursor: default; }
+.bar:hover, .bar:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+.bar.ext { background-image: repeating-linear-gradient(135deg, transparent 0 4px, rgba(255,255,255,.28) 4px 6px); }
+.overlap { position: absolute; top: 4px; bottom: 4px; }
+.overlap i { position: absolute; top: 0; bottom: 0; }
+.today-free { color: var(--ink-3); }
+
+/* Календарь по дням */
+.months-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
+.month { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 12px 10px; min-width: 0; }
+.month h3 { margin: 0 0 8px; font-size: 14px; font-weight: 600; display: flex; justify-content: space-between; }
+.month h3 span { font-weight: 400; color: var(--ink-3); font-size: 12px; font-family: var(--f-mono); }
+.dow, .days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.dow div { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); text-align: center; padding-bottom: 2px; }
+.day { position: relative; aspect-ratio: 1 / 1.05; border-radius: 4px; font-family: var(--f-mono); font-size: 11px; color: var(--ink-2); padding: 2px 0 0 4px; font-variant-numeric: tabular-nums; }
+.day.we { background: var(--weekend); }
+.day.hol { color: var(--holiday); font-weight: 500; }
+.day.hol::after { content: ""; position: absolute; top: 3px; right: 3px; width: 5px; height: 5px; border-radius: 50%; background: var(--holiday); }
+.day.busy { color: var(--ink); cursor: default; }
+.day.busy:hover { outline: 1.5px solid var(--ink-3); }
+.stripes { position: absolute; left: 3px; right: 3px; bottom: 3px; display: grid; grid-template-rows: repeat(4, 3px); gap: 1px; }
+.stripes i { border-radius: 1.5px; }
+.day.warn { box-shadow: inset 0 0 0 1.5px var(--ov3); }
+
+/* Таблица */
+.tbl-scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; min-width: 560px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); font-weight: 500; }
+td.num { text-align: right; font-family: var(--f-mono); }
+th.num { text-align: right; }
+.who { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+.who i { width: 10px; height: 10px; border-radius: 3px; }
+.per { font-family: var(--f-mono); font-size: 13px; display: block; }
+.per em { font-style: normal; color: var(--holiday); font-size: 12px; font-family: var(--f-body); }
+tr:last-child td { border-bottom: 0; }
+.tot { font-weight: 600; }
+
+.ovl-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.ovl-list li { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; padding: 10px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+.ovl-list .d { font-family: var(--f-mono); font-size: 13px; min-width: 150px; }
+.ovl-list .n { color: var(--ink-2); }
+.pill { font-size: 12px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--ov2); color: var(--ink); }
+.pill.hi { background: var(--ov3); color: var(--surface); border-color: var(--ov3); }
+.note { color: var(--ink-3); font-size: 13px; max-width: 75ch; margin: 0; }
+
+#tip { position: fixed; z-index: 10; pointer-events: none; background: var(--ink); color: var(--bg); padding: 8px 10px; border-radius: 6px; font-size: 13px; line-height: 1.4; max-width: 260px; box-shadow: 0 4px 16px rgba(0,0,0,.18); }
+#tip b { font-weight: 600; }
+#tip .sw { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
+@media (max-width: 480px) { .wrap { padding-inline: 16px; } .months-grid { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>График отпусков 2027</h1>
+      <p class="sub">Четыре сотрудника, все периоды по дням. Наведите на полосу или день, чтобы увидеть, кто в отпуске. Рамкой отмечены дни, когда отдыхают двое и больше.</p>
+    </div>
+    <div class="legend" id="legend"></div>
+    <div class="opts">
+      <input type="checkbox" id="ext">
+      <label for="ext">Продлевать отпуск на праздничные дни (ст. 120 ТК РФ)</label>
+    </div>
+  </header>
+
+  <section>
+    <div class="sec-head"><h2>Весь год</h2><span class="hint">Штриховка: отпуск продлён из‑за праздника</span></div>
+    <div class="panel gantt-scroll"><div class="gantt" id="gantt"></div></div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>Кто одновременно в отпуске</h2><span class="hint" id="ovl-sum"></span></div>
+    <ul class="ovl-list" id="ovl"></ul>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>По дням</h2><span class="hint">Полоски в клетке: сверху вниз Наташа 1, Лиля, Наташа 2, Саша · точка: праздник</span></div>
+    <div class="months-grid" id="months"></div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>Периоды</h2></div>
+    <div class="panel tbl-scroll"><table id="tbl"></table></div>
+    <p class="note">Дни считаются календарными: первый день отпуска плюс указанное число дней. Нерабочие праздники 2027 года: 1–8 января, 23 февраля, 8 марта, 1 и 9 мая, 12 июня, 4 ноября. Если включить продление, праздник внутри отпуска не засчитывается и дата окончания сдвигается.</p>
+  </section>
+</div>
+<div id="tip" hidden></div>
+
+<script>
+const YEAR = 2027;
+const PEOPLE = [
+  { name: "Наташа 1", color: "--p1", periods: [["2027-02-15", 11], ["2027-05-04", 17], ["2027-08-02", 19], ["2027-12-24", 8]] },
+  { name: "Лиля",     color: "--p2", periods: [["2027-03-09", 13], ["2027-05-31", 34], ["2027-12-24", 8]] },
+  { name: "Наташа 2", color: "--p3", periods: [["2027-03-22", 7],  ["2027-07-12", 33], ["2027-12-16", 15]] },
+  { name: "Саша",     color: "--p4", periods: [["2027-03-09", 18], ["2027-06-15", 29], ["2027-10-25", 10]] },
+];
+const HOLIDAYS = ["01-01","01-02","01-03","01-04","01-05","01-06","01-07","01-08","02-23","03-08","05-01","05-09","06-12","11-04"];
+const MONTHS = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
+const MON_SHORT = ["янв","фев","мар","апр","мая","июн","июл","авг","сен","окт","ноя","дек"];
+const DOW = ["пн","вт","ср","чт","пт","сб","вс"];
+const DAY_MS = 86400000;
+const Y0 = Date.UTC(YEAR, 0, 1);
+const NDAYS = (Date.UTC(YEAR + 1, 0, 1) - Y0) / DAY_MS;
+
+const idxOf = s => (Date.UTC(+s.slice(0,4), +s.slice(5,7) - 1, +s.slice(8,10)) - Y0) / DAY_MS;
+const dateOf = i => new Date(Y0 + i * DAY_MS);
+const fmt = i => { const d = dateOf(i); return `${String(d.getUTCDate()).padStart(2,"0")}.${String(d.getUTCMonth()+1).padStart(2,"0")}`; };
+const fmtLong = i => { const d = dateOf(i); return `${d.getUTCDate()} ${MON_SHORT[d.getUTCMonth()]}`; };
+const isHol = i => { const d = dateOf(i); return HOLIDAYS.includes(`${String(d.getUTCMonth()+1).padStart(2,"0")}-${String(d.getUTCDate()).padStart(2,"0")}`); };
+const isWe = i => { const w = dateOf(i).getUTCDay(); return w === 0 || w === 6; };
+const cssVar = v => `var(${v})`;
+const plural = (n, a, b, c) => { const m = n % 10, h = n % 100; return (m === 1 && h !== 11) ? a : (m >= 2 && m <= 4 && (h < 12 || h > 14)) ? b : c; };
+const daysWord = n => `${n} ${plural(n, "день", "дня", "дней")}`;
+
+let extend = false;
+try { extend = localStorage.getItem("vac-ext") === "1"; } catch (e) {}
+document.getElementById("ext").checked = extend;
+
+// Период: [start, end] включительно; при продлении праздники внутри не считаются
+function span(startIdx, days) {
+  let end = startIdx, counted = 0, hol = [];
+  for (let i = startIdx; ; i++) {
+    if (extend && isHol(i)) { hol.push(i); }
+    else counted++;
+    end = i;
+    if (counted === days) break;
+  }
+  return { start: startIdx, end: Math.min(end, NDAYS - 1), hol, days };
+}
+
+function compute() {
+  const spans = PEOPLE.map(p => p.periods.map(([s, n]) => span(idxOf(s), n)));
+  const byDay = Array.from({ length: NDAYS }, () => []);
+  spans.forEach((list, pi) => list.forEach(sp => { for (let i = sp.start; i <= sp.end; i++) byDay[i].push(pi); }));
+  return { spans, byDay };
+}
+
+const tip = document.getElementById("tip");
+function showTip(e, html) { tip.innerHTML = html; tip.hidden = false; moveTip(e); }
+function moveTip(e) {
+  const r = tip.getBoundingClientRect();
+  let x = e.clientX + 14, y = e.clientY + 14;
+  if (x + r.width > innerWidth - 8) x = e.clientX - r.width - 14;
+  if (y + r.height > innerHeight - 8) y = e.clientY - r.height - 14;
+  tip.style.left = Math.max(8, x) + "px"; tip.style.top = Math.max(8, y) + "px";
+}
+function hideTip() { tip.hidden = true; }
+function dayTip(i, who) {
+  const d = dateOf(i);
+  let h = `<b>${d.getUTCDate()} ${MON_SHORT[d.getUTCMonth()]} ${YEAR}</b>, ${DOW[(d.getUTCDay() + 6) % 7]}${isHol(i) ? " · праздник" : ""}`;
+  if (who.length) h += "<br>" + who.map(pi => `<span class="sw" style="background:${cssVar(PEOPLE[pi].color)}"></span>${PEOPLE[pi].name}`).join("<br>");
+  else h += "<br>Все на работе";
+  return h;
+}
+
+function render() {
+  const { spans, byDay } = compute();
+  const pct = i => (i / NDAYS * 100) + "%";
+  const monthStarts = MONTHS.map((_, m) => (Date.UTC(YEAR, m, 1) - Y0) / DAY_MS);
+
+  // Легенда
+  document.getElementById("legend").innerHTML = PEOPLE.map((p, pi) => {
+    const tot = spans[pi].reduce((a, s) => a + s.days, 0);
+    return `<div class="chip"><i style="background:${cssVar(p.color)}"></i>${p.name}<span>${daysWord(tot)}</span></div>`;
+  }).join("");
+
+  // Годовая лента
+  const grid = monthStarts.map(s => `<b style="left:${pct(s)}"></b>`).join("");
+  let g = `<div></div><div class="track months">${monthStarts.map((s, m) => `<div class="m-tick" style="left:${pct(s)}">${MON_SHORT[m]}</div>`).join("")}</div>`;
+  PEOPLE.forEach((p, pi) => {
+    g += `<div class="g-label">${p.name}</div><div class="track"><div class="gridlines">${grid}</div>`;
+    spans[pi].forEach((sp, k) => {
+      const w = sp.end - sp.start + 1;
+      g += `<div class="bar${sp.hol.length ? " ext" : ""}" tabindex="0" data-p="${pi}" data-k="${k}" style="left:${pct(sp.start)};width:${pct(w)};background:${cssVar(p.color)}">${w >= 9 ? sp.days : ""}</div>`;
+    });
+    g += `</div>`;
+  });
+  // Полоса пересечений: оттенок = сколько человек отдыхает
+  let ov = "";
+  for (let i = 0; i < NDAYS; i++) {
+    const n = byDay[i].length;
+    if (n >= 1) ov += `<i data-d="${i}" style="left:${pct(i)};width:calc(${100/NDAYS}% + .5px);background:var(--ov${Math.min(n,3)})"></i>`;
+  }
+  g += `<div class="g-label small">Сколько в отпуске</div><div class="track"><div class="gridlines">${grid}</div><div class="overlap" style="left:0;right:0">${ov}</div></div>`;
+  g += `<div></div><div class="hint" style="display:flex;gap:14px;flex-wrap:wrap;font-size:12px">
+    <span><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--ov1);margin-right:5px"></i>1 человек</span>
+    <span><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--ov2);margin-right:5px"></i>2 человека</span>
+    <span><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--ov3);margin-right:5px"></i>3 и больше</span></div>`;
+  const gantt = document.getElementById("gantt");
+  gantt.innerHTML = g;
+
+  gantt.onmousemove = e => {
+    const bar = e.target.closest(".bar"), cell = e.target.closest(".overlap i");
+    if (bar) {
+      const pi = +bar.dataset.p, sp = spans[pi][+bar.dataset.k];
+      showTip(e, `<span class="sw" style="background:${cssVar(PEOPLE[pi].color)}"></span><b>${PEOPLE[pi].name}</b><br>${fmtLong(sp.start)} – ${fmtLong(sp.end)}<br>${daysWord(sp.days)}${sp.hol.length ? `<br>+ праздник: ${sp.hol.map(fmt).join(", ")}` : ""}`);
+    } else if (cell) showTip(e, dayTip(+cell.dataset.d, byDay[+cell.dataset.d]));
+    else hideTip();
+  };
+  gantt.onmouseleave = hideTip;
+
+  // Пересечения: непрерывные отрезки с одинаковым составом (2+ человека)
+  const ovl = [];
+  for (let i = 0; i < NDAYS; i++) {
+    const who = byDay[i];
+    if (who.length < 2) continue;
+    const key = who.join(",");
+    const last = ovl[ovl.length - 1];
+    if (last && last.key === key && last.end === i - 1) last.end = i;
+    else ovl.push({ key, who: [...who], start: i, end: i });
+  }
+  const totalOvl = byDay.filter(w => w.length >= 2).length;
+  document.getElementById("ovl-sum").textContent = `${daysWord(totalOvl)} с пересечениями`;
+  document.getElementById("ovl").innerHTML = ovl.map(o => {
+    const n = o.end - o.start + 1;
+    return `<li><span class="d">${fmt(o.start)}${n > 1 ? " – " + fmt(o.end) : ""}</span><span class="pill${o.who.length >= 3 ? " hi" : ""}">${o.who.length} чел. · ${daysWord(n)}</span><span class="n">${o.who.map(pi => PEOPLE[pi].name).join(", ")}</span></li>`;
+  }).join("");
+
+  // Календарь по дням
+  let mh = "";
+  MONTHS.forEach((mn, m) => {
+    const s = monthStarts[m], e = m < 11 ? monthStarts[m + 1] : NDAYS;
+    const busy = byDay.slice(s, e).filter(w => w.length).length;
+    const lead = (dateOf(s).getUTCDay() + 6) % 7;
+    let cells = "";
+    for (let k = 0; k < lead; k++) cells += `<div></div>`;
+    for (let i = s; i < e; i++) {
+      const who = byDay[i];
+      const cls = ["day", isWe(i) && "we", isHol(i) && "hol", who.length && "busy", who.length >= 2 && "warn"].filter(Boolean).join(" ");
+      const stripes = who.length ? `<div class="stripes">${PEOPLE.map((p, pi) => `<i style="background:${who.includes(pi) ? cssVar(p.color) : "transparent"}"></i>`).join("")}</div>` : "";
+      cells += `<div class="${cls}" data-d="${i}">${dateOf(i).getUTCDate()}${stripes}</div>`;
+    }
+    mh += `<div class="month"><h3>${mn}<span>${busy ? daysWord(busy) + " с отпуском" : "без отпусков"}</span></h3><div class="dow">${DOW.map(d => `<div>${d}</div>`).join("")}</div><div class="days">${cells}</div></div>`;
+  });
+  const months = document.getElementById("months");
+  months.innerHTML = mh;
+  months.onmousemove = e => {
+    const c = e.target.closest(".day");
+    if (c) showTip(e, dayTip(+c.dataset.d, byDay[+c.dataset.d])); else hideTip();
+  };
+  months.onmouseleave = hideTip;
+
+  // Таблица
+  let t = `<thead><tr><th>Сотрудник</th><th>Периоды</th><th class="num">Дней</th><th class="num">Итого</th></tr></thead><tbody>`;
+  PEOPLE.forEach((p, pi) => {
+    const tot = spans[pi].reduce((a, s) => a + s.days, 0);
+    t += `<tr><td><span class="who"><i style="background:${cssVar(p.color)}"></i>${p.name}</span></td>
+      <td>${spans[pi].map(sp => `<span class="per">${fmt(sp.start)}.${YEAR} – ${fmt(sp.end)}.${YEAR}${sp.hol.length ? ` <em>+праздник ${sp.hol.map(fmt).join(", ")}</em>` : ""}</span>`).join("")}</td>
+      <td class="num">${spans[pi].map(sp => `<span class="per">${sp.days}</span>`).join("")}</td>
+      <td class="num tot">${tot}</td></tr>`;
+  });
+  document.getElementById("tbl").innerHTML = t + "</tbody>";
+}
+
+document.getElementById("ext").addEventListener("change", e => {
+  extend = e.target.checked;
+  try { localStorage.setItem("vac-ext", extend ? "1" : "0"); } catch (err) {}
+  render();
+});
+render();
+</script>
