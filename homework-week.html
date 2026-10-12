@@ -1,0 +1,237 @@
+<title>Неделя и домашние задания</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@600;700&family=Golos+Text:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: шапка → легенда → недельная сетка 7 дней × 8:00–21:00 → план ДЗ → правила → что уточнить → промт */
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --ink: #1b1e24;
+  --ink-2: #555b66;
+  --ink-3: #8b909a;
+  --line: #e2e5ea;
+  --garden: #dfe3ea;      /* детский сад */
+  --garden-ink: #4a5260;
+  --lesson: #2a78d6;      /* занятия с ДЗ: китайский, английский, школа развития */
+  --sport: #4a3aa7;       /* гимнастика, танцы */
+  --katya: #1baf7a;       /* занятия у Кати */
+  --hw: #eb6834;          /* окно для домашнего задания */
+  --hw-soft: #fde6dc;
+  --warn: #b45309;
+  --warn-soft: #fef3c7;
+  --on-color: #ffffff;
+  --f-display: "Comfortaa", "Golos Text", system-ui, sans-serif;
+  --f-body: "Golos Text", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131519; --surface: #1b1e23; --ink: #f1f2f4; --ink-2: #b8bcc5; --ink-3: #7f848e; --line: #2c3037;
+    --garden: #2b3038; --garden-ink: #b8bcc5;
+    --lesson: #3987e5; --sport: #9085e9; --katya: #199e70; --hw: #d95926; --hw-soft: #3a2219;
+    --warn: #fbbf24; --warn-soft: #33270c; --on-color: #ffffff;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #131519; --surface: #1b1e23; --ink: #f1f2f4; --ink-2: #b8bcc5; --ink-3: #7f848e; --line: #2c3037;
+  --garden: #2b3038; --garden-ink: #b8bcc5;
+  --lesson: #3987e5; --sport: #9085e9; --katya: #199e70; --hw: #d95926; --hw-soft: #3a2219;
+  --warn: #fbbf24; --warn-soft: #33270c; --on-color: #ffffff;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1100px; margin: 0 auto; padding-inline: 20px; padding-block: 32px 56px; display: grid; gap: 36px; }
+h1 { font-family: var(--f-display); font-weight: 700; font-size: clamp(24px, 4vw, 34px); line-height: 1.2; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--f-display); font-weight: 700; font-size: 18px; margin: 0; }
+.sub { color: var(--ink-2); margin: 8px 0 0; max-width: 68ch; }
+section { display: grid; gap: 14px; min-width: 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 14px; }
+.legend span { display: flex; align-items: center; gap: 7px; }
+.legend i { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
+
+.stats { display: flex; flex-wrap: wrap; gap: 10px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; min-width: 150px; }
+.stat b { font-family: var(--f-mono); font-size: 20px; font-weight: 500; display: block; }
+.stat span { color: var(--ink-2); font-size: 13px; }
+
+/* Недельная сетка */
+.week-scroll { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.week { min-width: 760px; display: grid; grid-template-columns: 48px repeat(7, 1fr); padding: 12px 12px 14px 4px; }
+.day-head { text-align: center; font-weight: 600; font-size: 14px; padding-bottom: 8px; }
+.day-head small { display: block; color: var(--ink-3); font-weight: 400; font-size: 12px; }
+.day-head.we { color: var(--hw); }
+.axis, .col { position: relative; height: var(--h); }
+.axis div { position: absolute; right: 8px; transform: translateY(-50%); font-family: var(--f-mono); font-size: 11px; color: var(--ink-3); }
+.col { border-left: 1px solid var(--line); }
+.col .hl { position: absolute; left: 0; right: 0; border-top: 1px dashed var(--line); }
+.ev { position: absolute; left: 4px; right: 4px; border-radius: 6px; padding: 3px 6px; font-size: 12px; line-height: 1.25; overflow: hidden; color: var(--on-color); cursor: default; }
+.ev b { font-weight: 600; display: block; }
+.ev time { font-family: var(--f-mono); font-size: 10.5px; opacity: .9; }
+.ev.garden { background: var(--garden); color: var(--garden-ink); }
+.ev.lesson { background: var(--lesson); }
+.ev.sport { background: var(--sport); }
+.ev.katya { background: var(--katya); }
+.ev.hw { background: var(--hw-soft); color: var(--ink); border: 2px solid var(--hw); }
+.ev.hw b { color: var(--hw); }
+.ev.over { left: 18%; right: 4px; box-shadow: 0 0 0 2px var(--surface); }
+.ev.guess { border: 2px dashed var(--surface); }
+.ev.rest { background: transparent; color: var(--ink-3); border: 1px dashed var(--line); text-align: center; }
+.ev.rest b { font-weight: 500; }
+
+/* Таблица плана */
+.tbl-scroll { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+table { width: 100%; border-collapse: collapse; min-width: 620px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); font-weight: 500; }
+tr:last-child td { border-bottom: 0; }
+td.t { font-family: var(--f-mono); font-size: 13px; white-space: nowrap; }
+.tag { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px; color: var(--on-color); white-space: nowrap; }
+.tag.lesson { background: var(--lesson); }
+.tag.hw { background: var(--hw); }
+.muted { color: var(--ink-2); font-size: 14px; }
+
+.rules { margin: 0; padding-left: 22px; display: grid; gap: 8px; max-width: 75ch; }
+.rules b { font-weight: 600; }
+.warns { display: grid; gap: 8px; }
+.warn { background: var(--warn-soft); border-radius: 10px; padding: 10px 14px; max-width: 80ch; }
+.warn b { color: var(--warn); }
+
+.prompt { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 12px; }
+.prompt pre { margin: 0; white-space: pre-wrap; word-break: break-word; font-family: var(--f-mono); font-size: 13px; line-height: 1.55; color: var(--ink); max-height: 360px; overflow: auto; }
+button { justify-self: start; font: inherit; font-weight: 600; background: var(--ink); color: var(--bg); border: 0; border-radius: 8px; padding: 8px 16px; cursor: pointer; }
+button:focus-visible { outline: 3px solid var(--hw); outline-offset: 2px; }
+@media (max-width: 480px) { .wrap { padding-inline: 16px; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Неделя и домашние задания</h1>
+    <p class="sub">Когда ребёнок в саду и на занятиях, а когда остаются окна для домашних заданий по китайскому, английскому и школе развития. Оранжевые блоки — предлагаемое время для ДЗ.</p>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><b>3</b><span>предмета с ДЗ</span></div>
+    <div class="stat"><b>6</b><span>окон для ДЗ в неделю</span></div>
+    <div class="stat"><b>≈3 ч 20 мин</b><span>на ДЗ за неделю</span></div>
+    <div class="stat"><b>вт, чт</b><span>вечера без ДЗ: слишком плотно</span></div>
+  </div>
+
+  <section>
+    <h2>Занятость по дням</h2>
+    <div class="legend">
+      <span><i style="background:var(--garden)"></i>Детский сад</span>
+      <span><i style="background:var(--lesson)"></i>Занятия с ДЗ</span>
+      <span><i style="background:var(--sport)"></i>Гимнастика, танцы</span>
+      <span><i style="background:var(--katya)"></i>Занятия у Кати</span>
+      <span><i style="background:var(--hw-soft);border:2px solid var(--hw)"></i>Окно для ДЗ</span>
+    </div>
+    <div class="week-scroll"><div class="week" id="week"></div></div>
+  </section>
+
+  <section>
+    <h2>Когда какое задание делать</h2>
+    <div class="tbl-scroll"><table>
+      <thead><tr><th>Когда</th><th>Что делаем</th><th>К какому занятию</th><th>Почему здесь</th></tr></thead>
+      <tbody>
+        <tr><td class="t">Пн 18:00–18:30</td><td><span class="tag hw">ДЗ</span> Английский</td><td>Вт 19:30</td><td class="muted">Во вторник до английского времени нет: сначала танцы.</td></tr>
+        <tr><td class="t">Ср 18:00–18:40</td><td><span class="tag hw">ДЗ</span> Английский 20 мин + китайский 20 мин</td><td>Чт 19:30 и Пт 14:00</td><td class="muted">Единственное окно между вторником и четвергом. Китайский в пятницу днём, вечер четверга занят.</td></tr>
+        <tr><td class="t">Пт 18:00–18:30</td><td><span class="tag hw">ДЗ</span> Школа развития: доделать и проверить</td><td>Сб 9:00</td><td class="muted">Последняя возможность перед субботой.</td></tr>
+        <tr><td class="t">Сб 16:00–16:30</td><td><span class="tag hw">ДЗ</span> Китайский</td><td>Вс 14:00</td><td class="muted">После занятий у Кати и отдыха. Занятие уже завтра.</td></tr>
+        <tr><td class="t">Вс 10:00–10:40</td><td><span class="tag hw">ДЗ</span> Школа развития, основная часть</td><td>следующая Сб</td><td class="muted">Утро выходного, ребёнок свежий, тема вчерашнего занятия ещё в памяти.</td></tr>
+        <tr><td class="t">Вс 16:30–17:00</td><td><span class="tag hw">ДЗ</span> Китайский, начать</td><td>Пт 14:00</td><td class="muted">Сразу после занятия, пока свежо. В среду только повторить.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>Как расставлять приоритеты</h2>
+    <ol class="rules">
+      <li><b>Сначала то, что сдавать раньше.</b> Каждый вечер смотрите, какое занятие ближайшее, и начинайте с его задания.</li>
+      <li><b>Самое трудное — в выходные утром.</b> Школа развития объёмнее всего, её лучше делать в воскресенье утром, а не вечером после сада.</li>
+      <li><b>Вторник и четверг без ДЗ.</b> После сада сразу танцы и английский, до 20:00 ребёнок занят. В эти дни нужны ужин, отдых и сон.</li>
+      <li><b>Короткие подходы.</b> Для дошкольника 15–20 минут на задание, потом перерыв. В будни не больше 40 минут подряд.</li>
+      <li><b>Делать ДЗ сразу после занятия.</b> Китайский после воскресенья и школу развития после субботы проще сделать, пока тема свежая.</li>
+      <li><b>Не после 20:00.</b> После гимнастики ребёнок устал. Можно только 5–10 минут повторения слов, без новых заданий.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>Что стоит уточнить</h2>
+    <div class="warns">
+      <div class="warn"><b>Гимнастика «18:60–20:00».</b> Такого времени нет. В графике стоит 19:00–20:00. Если на самом деле 18:00, окно для ДЗ в пн, ср и пт пропадает.</div>
+      <div class="warn"><b>Китайский в пятницу 14:00–15:00</b> совпадает с садом (до 17:30). Скорее всего, занятие проходит в саду или ребёнка забирают раньше. На графике оно показано поверх сада.</div>
+      <div class="warn"><b>Занятия у Кати в субботу с 13:00:</b> время окончания не указано. В графике стоит час, до 14:00 (пунктирная рамка).</div>
+      <div class="warn"><b>Дорога и ужин.</b> В графике заложено 30 минут после сада на дорогу и перекус, поэтому окна начинаются в 18:00.</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Промт, чтобы пересобрать график</h2>
+    <p class="muted">Если расписание поменяется, скопируйте этот текст, поменяйте время и отправьте Claude.</p>
+    <div class="prompt">
+      <pre id="prompt-text">Ты помогаешь родителю спланировать неделю ребёнка-дошкольника так, чтобы хватало времени на домашние задания.
+
+Расписание:
+- Детский сад: пн–пт 8:00–17:30
+- Гимнастика: пн, ср, пт 19:00–20:00
+- Бальные танцы: вт, чт 18:20–19:20
+- Английский: вт, чт 19:30–20:00 (есть ДЗ)
+- Китайский: пт, вс 14:00–15:00 (есть ДЗ)
+- Школа развития: сб 9:00–11:05 (есть ДЗ)
+- Занятия у Кати: сб с 13:00 до [время окончания]
+
+Ограничения:
+- После сада 30 минут на дорогу и перекус
+- После 20:00 новых заданий не делаем, ребёнок устаёт
+- Один подход к ДЗ: 15–20 минут, в будни не больше 40 минут в день
+- Отбой в [время]
+
+Что нужно:
+1. Построй недельную диаграмму занятости по дням (дни по горизонтали, время 8:00–21:00 по вертикали), отдельным цветом выдели свободные окна.
+2. Составь таблицу: в какое окно какое ДЗ делать, к какому занятию оно и почему именно тогда.
+3. Расставь приоритеты: что делать первым, если времени не хватает.
+4. Посчитай, сколько всего минут в неделю уходит на ДЗ.
+5. Укажи накладки и неточности в расписании, если найдёшь.</pre>
+      <button type="button" id="copy">Скопировать промт</button>
+    </div>
+  </section>
+</div>
+
+<script>
+const START = 8 * 60, END = 21 * 60, PX = 1.15; // пикселей на минуту
+const t = s => { const [h, m] = s.split(":").map(Number); return h * 60 + m; };
+const DAYS = [
+  ["Пн", "", [["garden","Детский сад","8:00","17:30"],["hw","ДЗ: английский","18:00","18:30"],["sport","Гимнастика","19:00","20:00"]]],
+  ["Вт", "", [["garden","Детский сад","8:00","17:30"],["sport","Бальные танцы","18:20","19:20"],["lesson","Английский","19:30","20:00"]]],
+  ["Ср", "", [["garden","Детский сад","8:00","17:30"],["hw","ДЗ: англ. + кит.","18:00","18:40"],["sport","Гимнастика","19:00","20:00"]]],
+  ["Чт", "", [["garden","Детский сад","8:00","17:30"],["sport","Бальные танцы","18:20","19:20"],["lesson","Английский","19:30","20:00"]]],
+  ["Пт", "", [["garden","Детский сад","8:00","17:30"],["lesson over","Китайский","14:00","15:00"],["hw","ДЗ: школа развития","18:00","18:30"],["sport","Гимнастика","19:00","20:00"]]],
+  ["Сб", "выходной", [["lesson","Школа развития","9:00","11:05"],["katya guess","Занятия у Кати","13:00","14:00"],["hw","ДЗ: китайский","16:00","16:30"]]],
+  ["Вс", "выходной", [["hw","ДЗ: школа развития","10:00","10:40"],["lesson","Китайский","14:00","15:00"],["hw","ДЗ: китайский","16:30","17:00"]]],
+];
+const H = (END - START) * PX;
+const week = document.getElementById("week");
+let html = `<div></div>` + DAYS.map(([d, s]) => `<div class="day-head${s ? " we" : ""}">${d}<small>${s || "&nbsp;"}</small></div>`).join("");
+html += `<div class="axis" style="--h:${H}px">`;
+for (let m = START; m <= END; m += 60) html += `<div style="top:${(m - START) * PX}px">${m / 60}:00</div>`;
+html += `</div>`;
+DAYS.forEach(([d, s, evs]) => {
+  html += `<div class="col" style="--h:${H}px">`;
+  for (let m = START; m <= END; m += 60) html += `<div class="hl" style="top:${(m - START) * PX}px"></div>`;
+  evs.forEach(([cls, name, a, b]) => {
+    const top = (t(a) - START) * PX, h = (t(b) - t(a)) * PX;
+    html += `<div class="ev ${cls}" style="top:${top}px;height:${h}px" title="${name}, ${a}–${b}"><b>${name}</b>${h >= 30 ? `<time>${a}–${b}</time>` : ""}</div>`;
+  });
+  if (d === "Вт" || d === "Чт") html += `<div class="ev rest" style="top:${(t("20:10") - START) * PX}px;height:${40 * PX}px"><b>без ДЗ</b></div>`;
+  html += `</div>`;
+});
+week.innerHTML = html;
+
+document.getElementById("copy").addEventListener("click", e => {
+  const text = document.getElementById("prompt-text").textContent, btn = e.currentTarget;
+  navigator.clipboard.writeText(text).then(() => { btn.textContent = "Скопировано"; setTimeout(() => btn.textContent = "Скопировать промт", 2000); })
+    .catch(() => { const r = document.createRange(); r.selectNodeContents(document.getElementById("prompt-text")); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); btn.textContent = "Выделено, нажмите Ctrl+C"; });
+});
+</script>
